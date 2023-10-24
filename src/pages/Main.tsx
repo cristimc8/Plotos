@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { BrandTitle } from "../components/BrandTitle";
 import { ImgBackground } from "../components/ImgBackground";
@@ -8,11 +8,11 @@ import { useMath } from "../hooks/useMath";
 import MathView, { MathText } from 'react-native-math-view';
 import { Button } from "@ui-kitten/components";
 import { MathPlot } from "../components/MathPlot/MathPlot";
+import { Functions } from "../assets/functions";
 
 
 export const Main = () => {
   const {
-    allFunctions,
     currentFunction,
     plotButtonText
   } = useMath();
@@ -30,11 +30,15 @@ export const Main = () => {
         )
       }
 
-      <View>
+      <View style={{
+        marginTop: 30,
+        paddingHorizontal: 15,
+      }}>
         <MathView
-          math={currentFunction?.formula || allFunctions[0].formula}
+          math={currentFunction?.formula || Functions.toPlot[0].formula}
           style={{
             color: 'white',
+            lineBreak: 'always',
           }}
         />
       </View>
@@ -56,12 +60,14 @@ export const Main = () => {
 
       {
         isPlotting && (
-          <MathPlot/>
+          <View style={styles.plotContainer}>
+            <MathPlot/>
+          </View>
         )
       }
 
       <View style={styles.mathFunctionsContainer}>
-        {allFunctions.map((fn) => (
+        {Functions.toPlot.map((fn) => (
           <MathFunction
             key={fn.id}
             functionId={fn.id}
@@ -85,5 +91,10 @@ const styles = StyleSheet.create({
     marginLeft: '10%',
     width: '100%',
   },
+  plotContainer: {
+    flex: 0,
+    height: 400,
+    marginTop: 60,
+  }
 });
 

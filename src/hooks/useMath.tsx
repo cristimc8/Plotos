@@ -1,19 +1,14 @@
 import { createContext, useContext, useEffect, useState } from "react";
-
-export interface MathFormula {
-  name: string;
-  shortName: string;
-  formula: string;
-  mathJsFormula: string;
-  id: number;
-}
+import { MathFormula } from "../types";
+import { Functions } from "../assets/functions";
+import { all, create } from 'mathjs';
 
 const mathContext = createContext<{
   currentFunction: MathFormula | undefined;
   setCurrentFunction: (fn?: MathFormula) => void;
-  allFunctions: MathFormula[];
   findById: (fnId: number) => MathFormula | undefined;
   plotButtonText: string;
+  compute: (fnId: number) => { xValues: number[], yValues: any[] }
 }>(undefined!);
 
 export const ProvideMath = ({children}: { children: React.ReactNode }) => {
@@ -26,39 +21,59 @@ export const useMath = () => {
 }
 
 const useProvideMath = () => {
-  const allFunctions: MathFormula[] = [
-    {
-      name: 'Wacky Wibble',
-      shortName: 'WWF',
-      formula: '\\frac{\\sin(\\sqrt{x^3})}{\\log_2(\\cos(3x + 1))} + \\frac{e^{x^2}}{x + 1} - \\frac{\\sqrt{x}}{1 + \\tan(2x)}',
-      mathJsFormula: 'sin(sqrt(x^3)) / log2(cos(3x + 1)) + e^(x^2) / (x + 1) - sqrt(x) / (1 + tan(2x))',
-      id: 1
-    },
-    {
-      name: 'Funky Frizzle',
-      shortName: 'FFF',
-      formula: '\\frac{\\sin^2(4x^2)}{\\log(\\sqrt{x})} + \\frac{e^{\\frac{x^3}{2}}}{\\sqrt{1 + \\cos(5x)}} - \\frac{\\sqrt[3]{x^5}}{\\tan^2(3x)}',
-      mathJsFormula: 'sin(4x^2)^2 / log(sqrt(x)) + e^(x^3 / 2) / sqrt(1 + cos(5x)) - (x^5)^(1/3) / tan(3x)^2',
-      id: 2
-    },
-  ];
+  const math = create(all);
 
-  const [currentFunction, setCurrentFunction] = useState<MathFormula | undefined>(allFunctions[0]);
+  const [currentFunction, setCurrentFunction] = useState<MathFormula | undefined>(Functions.toPlot[0]);
   const [plotText, setPlotText] = useState('Plot function');
 
   useEffect(() => {
-    setPlotText(`Plot ${currentFunction?.shortName || allFunctions[0].shortName}`);
+    setPlotText(`Plot ${currentFunction?.shortName || Functions.toPlot[0].shortName}`);
   }, [currentFunction]);
 
   const findById = (fnId: number) => {
-    return allFunctions.find((fn) => fn.id === fnId);
+    return Functions.toPlot.find((fn) => fn.id === fnId);
   }
+
+
+  // COMPUTE REGION
+  const INTERVAL_START = -10;
+  const INTERVAL_END = 10;
+  const INTERVAL_STEP = 0.1;
+
+  let filteredX: number[] = [];
+  let filteredY: any[] = [];
+
+
+  const compute = (fnId: number) => {
+    if (filteredX.length > 0) {
+      filteredX = [];
+      filteredY = [];
+    }
+
+    for (let x = INTERVAL_START; x <= INTERVAL_END; x += INTERVAL_STEP) {
+      const result = math.evaluate(findById(fnId)!.mathJsFormula, {x, y: 0 - x});
+
+      if (result === Infinity || result === -Infinity || isNaN(result)) {
+        filteredX.pop();
+        filteredY.pop();
+        continue;
+      }
+      filteredX.push(x);
+      filteredY.push(result);
+    }
+
+    return {
+      xValues: filteredX,
+      yValues: filteredY,
+    }
+  }
+  // END REGION
 
   return {
     currentFunction,
     setCurrentFunction,
-    allFunctions,
     findById,
     plotButtonText: plotText,
+    compute,
   };
 }
